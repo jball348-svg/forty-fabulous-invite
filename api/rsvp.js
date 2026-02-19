@@ -1,5 +1,18 @@
-// Serverless function for RSVP submission with Prisma database
-import { prisma } from '../lib/prisma.js'
+// Serverless function for RSVP submission with Supabase database
+import { createClient } from '@supabase/supabase-js'
+
+function getSupabase() {
+  const supabaseUrl = process.env.SUPABASE_URL
+  const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY
+
+  if (!supabaseUrl || !supabaseServiceKey) {
+    throw new Error(
+      'Missing SUPABASE_URL or SUPABASE_SERVICE_ROLE_KEY environment variables. ' +
+      'Please set them in your Vercel project settings.'
+    )
+  }
+  return createClient(supabaseUrl, supabaseServiceKey)
+}
 
 export default async function handler(req, res) {
   // Enable CORS
@@ -12,25 +25,32 @@ export default async function handler(req, res) {
     return res.status(200).end()
   }
 
+  let supabase
+  try {
+    supabase = getSupabase()
+  } catch (error) {
+    console.error('Supabase init error:', error.message)
+    return res.status(500).json({ error: error.message })
+  }
+
   if (req.method === 'GET') {
     try {
-      // Get all RSVP responses from Prisma
-      const rsvps = await prisma.rSVP.findMany({
-        orderBy: {
-          submittedAt: 'desc'
-        }
-      })
+      const { data, error } = await supabase
+        .from('rsvps')
+        .select('*')
+        .order('submitted_at', { ascending: false })
 
-      // Transform data to match expected format
-      const responses = rsvps.map(item => ({
+      if (error) throw error
+
+      const responses = (data || []).map(item => ({
         name: item.name,
         attending: item.attending,
-        submittedAt: item.submittedAt.toISOString()
+        submittedAt: item.submitted_at
       }))
 
       return res.status(200).json({ responses })
     } catch (error) {
-      console.error('Prisma GET error:', error)
+      console.error('Supabase GET error:', error)
       return res.status(500).json({ error: 'Failed to fetch RSVPs' })
     }
   }
@@ -40,11 +60,12 @@ export default async function handler(req, res) {
       const { index } = req.body
 
       // First get all RSVPs to find the one to delete
-      const allRsvps = await prisma.rSVP.findMany({
-        orderBy: {
-          submittedAt: 'desc'
-        }
-      })
+      const { data: allRsvps, error: fetchError } = await supabase
+        .from('rsvps')
+        .select('*')
+        .order('submitted_at', { ascending: false })
+
+      if (fetchError) throw fetchError
 
       if (index < 0 || index >= allRsvps.length) {
         return res.status(400).json({ error: 'Invalid RSVP index' })
@@ -52,18 +73,19 @@ export default async function handler(req, res) {
 
       // Delete the specific RSVP
       const rsvpToDelete = allRsvps[index]
-      await prisma.rSVP.delete({
-        where: {
-          id: rsvpToDelete.id
-        }
-      })
+      const { error: deleteError } = await supabase
+        .from('rsvps')
+        .delete()
+        .eq('id', rsvpToDelete.id)
 
-      return res.status(200).json({ 
-        success: true, 
+      if (deleteError) throw deleteError
+
+      return res.status(200).json({
+        success: true,
         message: `RSVP for ${rsvpToDelete.name} deleted successfully`
       })
     } catch (error) {
-      console.error('Prisma DELETE error:', error)
+      console.error('Supabase DELETE error:', error)
       return res.status(500).json({ error: 'Failed to delete RSVP' })
     }
   }
@@ -80,71 +102,40 @@ export default async function handler(req, res) {
       return res.status(400).json({ error: 'Missing required fields' })
     }
 
-    // Store the RSVP response in Prisma
-    const newRSVP = await prisma.rSVP.create({
-      data: {
-        name,
-        attending,
-        submittedAt: new Date()
-      }
-    })
+    // Store the RSVP response in Supabase
+    const { data: newRSVP, error } = await supabase
+      .from('rsvps')
+      .insert({ name, attending })
+      .select()
+      .single()
+
+    if (error) throw error
 
     // Transform response to match expected format
     const newResponse = {
       name: newRSVP.name,
       attending: newRSVP.attending,
-      submittedAt: newRSVP.submittedAt.toISOString()
+      submittedAt: newRSVP.submitted_at
     }
 
-    // Your email address (can also be set as environment variable)
-    const TARGET_EMAIL = 'john@fairfax-ball.com'
-
-    // Create email content
-    const emailSubject = `RSVP Response: ${name}`
-    const emailBody = `
-New RSVP submission:
-
-Name: ${name}
-Attending: ${attending === 'yes' ? 'Yes' : 'No'}
-Submitted: ${new Date().toLocaleString()}
-
----
-This RSVP was submitted via the 40th Birthday invitation website.
-    `
-
-    // For production, you would use a real email service like:
-    // - Resend (recommended)
-    // - SendGrid
-    // - AWS SES
-    // - Nodemailer with SMTP
-    
-    // Example with Resend (uncomment and configure):
-    /*
-    const resend = new Resend(process.env.RESEND_API_KEY);
-    await resend.emails.send({
-      from: 'rsvp@yourdomain.com',
-      to: TARGET_EMAIL,
-      subject: emailSubject,
-      text: emailBody,
-    });
-    */
-
-    // For development/testing, just log the email data
-    console.log('Email would be sent to:', TARGET_EMAIL)
-    console.log('Subject:', emailSubject)
-    console.log('Body:', emailBody)
+    // Log RSVP for monitoring
+    console.log('New RSVP:', {
+      name,
+      attending: attending === 'yes' ? 'Yes' : 'No',
+      submitted: new Date().toLocaleString()
+    })
 
     // Success response
-    res.status(200).json({ 
-      success: true, 
+    return res.status(200).json({
+      success: true,
       message: 'RSVP submitted successfully',
       response: newResponse
     })
 
   } catch (error) {
     console.error('RSVP submission error:', error)
-    res.status(500).json({ 
-      error: 'Failed to submit RSVP' 
+    return res.status(500).json({
+      error: 'Failed to submit RSVP'
     })
   }
 }
