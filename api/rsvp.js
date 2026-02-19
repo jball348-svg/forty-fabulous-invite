@@ -1,24 +1,28 @@
-// Serverless function for RSVP submission with Supabase database
-import { createClient } from '@supabase/supabase-js'
+// Serverless function for RSVP submission with Upstash Redis
+// No SQL, no tables, no schemas — just simple key-value storage
+import { Redis } from '@upstash/redis'
 
-function getSupabase() {
-  const supabaseUrl = process.env.SUPABASE_URL
-  const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY
+const RSVP_KEY = 'rsvps'
 
-  if (!supabaseUrl || !supabaseServiceKey) {
+function getRedis() {
+  const url = process.env.KV_REST_API_URL || process.env.UPSTASH_REDIS_REST_URL
+  const token = process.env.KV_REST_API_TOKEN || process.env.UPSTASH_REDIS_REST_TOKEN
+
+  if (!url || !token) {
     throw new Error(
-      'Missing SUPABASE_URL or SUPABASE_SERVICE_ROLE_KEY environment variables. ' +
-      'Please set them in your environment (e.g. Vercel project settings or .env.local).'
+      'Redis not configured. Add Upstash Redis from the Vercel Marketplace ' +
+      '(see DATABASE_SETUP.md for 3-step instructions).'
     )
   }
-  return createClient(supabaseUrl, supabaseServiceKey)
+  return new Redis({ url, token })
 }
 
-function isTableNotFound(error) {
-  if (!error) return false
-  const msg = (error.message || '').toLowerCase()
-  const isRelationMissing = msg.includes('relation') && msg.includes('does not exist')
-  return isRelationMissing || error.code === '42P01' || error.code === 'PGRST204'
+async function getRsvps(redis) {
+  return (await redis.get(RSVP_KEY)) || []
+}
+
+async function setRsvps(redis, rsvps) {
+  await redis.set(RSVP_KEY, rsvps)
 }
 
 export default async function handler(req, res) {
@@ -32,79 +36,42 @@ export default async function handler(req, res) {
     return res.status(200).end()
   }
 
-  let supabase
+  let redis
   try {
-    supabase = getSupabase()
+    redis = getRedis()
   } catch (error) {
-    console.error('Supabase init error:', error.message)
+    console.error('Redis init error:', error.message)
     return res.status(500).json({ error: error.message })
   }
 
   if (req.method === 'GET') {
     try {
-      const { data, error } = await supabase
-        .from('rsvps')
-        .select('*')
-        .order('submitted_at', { ascending: false })
-
-      if (error) throw error
-
-      const responses = (data || []).map(item => ({
-        name: item.name,
-        attending: item.attending,
-        submittedAt: item.submitted_at
-      }))
-
-      return res.status(200).json({ responses })
+      const rsvps = await getRsvps(redis)
+      return res.status(200).json({ responses: rsvps })
     } catch (error) {
-      console.error('Supabase GET error:', error)
-      if (isTableNotFound(error)) {
-        return res.status(500).json({
-          error: 'Database table not set up yet. Visit /api/setup for easy setup instructions.',
-          setup: true
-        })
-      }
-      return res.status(500).json({ error: 'Failed to fetch RSVPs' })
+      console.error('Redis GET error:', error)
+      return res.status(500).json({ error: 'Failed to fetch RSVPs. Make sure Upstash Redis is connected (see DATABASE_SETUP.md).' })
     }
   }
 
   if (req.method === 'DELETE') {
     try {
       const { index } = req.body
+      const rsvps = await getRsvps(redis)
 
-      // First get all RSVPs to find the one to delete
-      const { data: allRsvps, error: fetchError } = await supabase
-        .from('rsvps')
-        .select('*')
-        .order('submitted_at', { ascending: false })
-
-      if (fetchError) throw fetchError
-
-      if (index < 0 || index >= allRsvps.length) {
+      if (index < 0 || index >= rsvps.length) {
         return res.status(400).json({ error: 'Invalid RSVP index' })
       }
 
-      // Delete the specific RSVP
-      const rsvpToDelete = allRsvps[index]
-      const { error: deleteError } = await supabase
-        .from('rsvps')
-        .delete()
-        .eq('id', rsvpToDelete.id)
-
-      if (deleteError) throw deleteError
+      const deleted = rsvps.splice(index, 1)[0]
+      await setRsvps(redis, rsvps)
 
       return res.status(200).json({
         success: true,
-        message: `RSVP for ${rsvpToDelete.name} deleted successfully`
+        message: `RSVP for ${deleted.name} deleted successfully`
       })
     } catch (error) {
-      console.error('Supabase DELETE error:', error)
-      if (isTableNotFound(error)) {
-        return res.status(500).json({
-          error: 'Database table not set up yet. Visit /api/setup for easy setup instructions.',
-          setup: true
-        })
-      }
+      console.error('Redis DELETE error:', error)
       return res.status(500).json({ error: 'Failed to delete RSVP' })
     }
   }
@@ -116,51 +83,29 @@ export default async function handler(req, res) {
   try {
     const { name, attending } = req.body
 
-    // Validate required fields
     if (!name || !attending) {
       return res.status(400).json({ error: 'Missing required fields' })
     }
 
-    // Store the RSVP response in Supabase
-    const { data: newRSVP, error } = await supabase
-      .from('rsvps')
-      .insert({ name, attending })
-      .select()
-      .single()
-
-    if (error) throw error
-
-    // Transform response to match expected format
     const newResponse = {
-      name: newRSVP.name,
-      attending: newRSVP.attending,
-      submittedAt: newRSVP.submitted_at
+      name,
+      attending,
+      submittedAt: new Date().toISOString()
     }
 
-    // Log RSVP for monitoring
-    console.log('New RSVP:', {
-      name,
-      attending: attending === 'yes' ? 'Yes' : 'No',
-      submitted: new Date().toLocaleString()
-    })
+    const rsvps = await getRsvps(redis)
+    rsvps.unshift(newResponse) // newest first
+    await setRsvps(redis, rsvps)
 
-    // Success response
+    console.log('New RSVP:', { name, attending, submitted: newResponse.submittedAt })
+
     return res.status(200).json({
       success: true,
       message: 'RSVP submitted successfully',
       response: newResponse
     })
-
   } catch (error) {
     console.error('RSVP submission error:', error)
-    if (isTableNotFound(error)) {
-      return res.status(500).json({
-        error: 'Database table not set up yet. Visit /api/setup for easy setup instructions.',
-        setup: true
-      })
-    }
-    return res.status(500).json({
-      error: 'Failed to submit RSVP'
-    })
+    return res.status(500).json({ error: 'Failed to submit RSVP' })
   }
 }

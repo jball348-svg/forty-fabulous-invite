@@ -1,10 +1,9 @@
-# Prisma Database Setup - DEPRECATED
+# Prisma Database Setup - REMOVED
 
-> **⚠️ The Prisma database approach has been replaced with Supabase.**
+> **This project no longer uses Prisma or Supabase.**
 >
-> Prisma was causing runtime errors in the Vercel serverless functions due to
-> client generation issues and the free Prisma Accelerate database expiring.
+> RSVP data is now stored using **Upstash Redis** — a simple key-value store
+> available from the Vercel Marketplace that requires no database setup,
+> no SQL, and no schemas.
 >
-> **Please follow the instructions in [`DATABASE_SETUP.md`](./DATABASE_SETUP.md)
-> to set up Supabase instead.** Supabase is simpler, more reliable, and has a
-> generous free tier.
+> See [`DATABASE_SETUP.md`](./DATABASE_SETUP.md) for the 3-step setup.

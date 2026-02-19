@@ -1,46 +1,28 @@
-# Database Setup Guide
+# Database Setup — Upstash Redis
 
-Your RSVP data is stored in a free **Supabase** database (PostgreSQL).
+RSVP data is stored using **Upstash Redis**, a simple key-value store available
+from the Vercel Marketplace. No SQL, no tables, no schemas, no external
+accounts needed.
 
-## Quick Setup
+## Setup (3 steps, ~1 minute)
 
-**Visit your deployed site at `/api/setup`** — it will walk you through everything
-step-by-step and tell you exactly what to do.
+1. Open your **Vercel project dashboard**
+2. Click the **Storage** tab → **Create Database** → choose **Upstash Redis** → **Create**
+3. Click **Connect to Project** → select your project → **Connect**
 
-The setup wizard checks your progress automatically:
-- ✅ or ❌ — environment variables configured
-- ✅ or ❌ — database table created
+That's it. Redeploy and your RSVP form + admin page will work.
 
-## Manual Steps (if you prefer)
+## How it works
 
-### 1. Create a free Supabase project
-
-1. Go to [supabase.com](https://supabase.com) and sign up (GitHub login works)
-2. Click **New Project**, pick any name and region, then wait ~2 minutes
-
-### 2. Add environment variables to Vercel
-
-From your Supabase project go to **Settings → API** and copy:
-- **Project URL** → add as `SUPABASE_URL` in Vercel
-- **service_role key** → add as `SUPABASE_SERVICE_ROLE_KEY` in Vercel
-
-Then **redeploy** your Vercel project so it picks up the new variables.
-
-### 3. Create the RSVP table
-
-Visit `/api/setup` on your deployed site. It will give you a **Copy SQL**
-button and a direct link to your Supabase SQL Editor. Paste the SQL and
-press **Run** — that's it.
-
-### 4. Test it
-
-- Submit an RSVP on your site
-- View it on `/admin`
+- RSVPs are stored as a simple JSON list in Redis
+- The `/api/rsvp` serverless function handles GET/POST/DELETE
+- Data persists across all deployments — it's stored externally by Upstash
+- Free tier: 10,000 requests/day, 256 MB storage (way more than you need for ~20 RSVPs)
 
 ## Troubleshooting
 
 | Problem | Fix |
 |---------|-----|
-| "Missing SUPABASE_URL…" | Add the env vars in Vercel and redeploy |
-| "Database table not set up" | Visit `/api/setup` and follow Step 2 |
-| Data disappears on redeploy | This shouldn't happen — Supabase data is persistent |
+| "Redis not configured" | Make sure Upstash Redis is connected (Storage tab in Vercel) and redeploy |
+| Works locally but not in prod | Redis only works on Vercel — local dev uses localStorage fallback |
+| Need to reset all data | In Vercel dashboard → Storage → your Redis DB → CLI tab → run `DEL rsvps` |
