@@ -1,5 +1,29 @@
-// Serverless function for RSVP submission with Prisma database
-import { prisma } from '../lib/prisma.js'
+// Serverless function for RSVP submission with Upstash Redis
+// No SQL, no tables, no schemas — just simple key-value storage
+import { Redis } from '@upstash/redis'
+
+const RSVP_KEY = 'rsvps'
+
+function getRedis() {
+  const url = process.env.KV_REST_API_URL || process.env.UPSTASH_REDIS_REST_URL
+  const token = process.env.KV_REST_API_TOKEN || process.env.UPSTASH_REDIS_REST_TOKEN
+
+  if (!url || !token) {
+    throw new Error(
+      'Redis not configured. Add Upstash Redis from the Vercel Marketplace ' +
+      '(see DATABASE_SETUP.md for 3-step instructions).'
+    )
+  }
+  return new Redis({ url, token })
+}
+
+async function getRsvps(redis) {
+  return (await redis.get(RSVP_KEY)) || []
+}
+
+async function setRsvps(redis, rsvps) {
+  await redis.set(RSVP_KEY, rsvps)
+}
 
 export default async function handler(req, res) {
   // Enable CORS
@@ -12,58 +36,42 @@ export default async function handler(req, res) {
     return res.status(200).end()
   }
 
+  let redis
+  try {
+    redis = getRedis()
+  } catch (error) {
+    console.error('Redis init error:', error.message)
+    return res.status(500).json({ error: error.message })
+  }
+
   if (req.method === 'GET') {
     try {
-      // Get all RSVP responses from Prisma
-      const rsvps = await prisma.rSVP.findMany({
-        orderBy: {
-          submittedAt: 'desc'
-        }
-      })
-
-      // Transform data to match expected format
-      const responses = rsvps.map(item => ({
-        name: item.name,
-        attending: item.attending,
-        submittedAt: item.submittedAt.toISOString()
-      }))
-
-      return res.status(200).json({ responses })
+      const rsvps = await getRsvps(redis)
+      return res.status(200).json({ responses: rsvps })
     } catch (error) {
-      console.error('Prisma GET error:', error)
-      return res.status(500).json({ error: 'Failed to fetch RSVPs' })
+      console.error('Redis GET error:', error)
+      return res.status(500).json({ error: 'Failed to fetch RSVPs. Make sure Upstash Redis is connected (see DATABASE_SETUP.md).' })
     }
   }
 
   if (req.method === 'DELETE') {
     try {
       const { index } = req.body
+      const rsvps = await getRsvps(redis)
 
-      // First get all RSVPs to find the one to delete
-      const allRsvps = await prisma.rSVP.findMany({
-        orderBy: {
-          submittedAt: 'desc'
-        }
-      })
-
-      if (index < 0 || index >= allRsvps.length) {
+      if (index < 0 || index >= rsvps.length) {
         return res.status(400).json({ error: 'Invalid RSVP index' })
       }
 
-      // Delete the specific RSVP
-      const rsvpToDelete = allRsvps[index]
-      await prisma.rSVP.delete({
-        where: {
-          id: rsvpToDelete.id
-        }
-      })
+      const deleted = rsvps.splice(index, 1)[0]
+      await setRsvps(redis, rsvps)
 
-      return res.status(200).json({ 
-        success: true, 
-        message: `RSVP for ${rsvpToDelete.name} deleted successfully`
+      return res.status(200).json({
+        success: true,
+        message: `RSVP for ${deleted.name} deleted successfully`
       })
     } catch (error) {
-      console.error('Prisma DELETE error:', error)
+      console.error('Redis DELETE error:', error)
       return res.status(500).json({ error: 'Failed to delete RSVP' })
     }
   }
@@ -75,76 +83,29 @@ export default async function handler(req, res) {
   try {
     const { name, attending } = req.body
 
-    // Validate required fields
     if (!name || !attending) {
       return res.status(400).json({ error: 'Missing required fields' })
     }
 
-    // Store the RSVP response in Prisma
-    const newRSVP = await prisma.rSVP.create({
-      data: {
-        name,
-        attending,
-        submittedAt: new Date()
-      }
-    })
-
-    // Transform response to match expected format
     const newResponse = {
-      name: newRSVP.name,
-      attending: newRSVP.attending,
-      submittedAt: newRSVP.submittedAt.toISOString()
+      name,
+      attending,
+      submittedAt: new Date().toISOString()
     }
 
-    // Your email address (can also be set as environment variable)
-    const TARGET_EMAIL = 'john@fairfax-ball.com'
+    const rsvps = await getRsvps(redis)
+    rsvps.unshift(newResponse) // newest first
+    await setRsvps(redis, rsvps)
 
-    // Create email content
-    const emailSubject = `RSVP Response: ${name}`
-    const emailBody = `
-New RSVP submission:
+    console.log('New RSVP:', { name, attending, submitted: newResponse.submittedAt })
 
-Name: ${name}
-Attending: ${attending === 'yes' ? 'Yes' : 'No'}
-Submitted: ${new Date().toLocaleString()}
-
----
-This RSVP was submitted via the 40th Birthday invitation website.
-    `
-
-    // For production, you would use a real email service like:
-    // - Resend (recommended)
-    // - SendGrid
-    // - AWS SES
-    // - Nodemailer with SMTP
-    
-    // Example with Resend (uncomment and configure):
-    /*
-    const resend = new Resend(process.env.RESEND_API_KEY);
-    await resend.emails.send({
-      from: 'rsvp@yourdomain.com',
-      to: TARGET_EMAIL,
-      subject: emailSubject,
-      text: emailBody,
-    });
-    */
-
-    // For development/testing, just log the email data
-    console.log('Email would be sent to:', TARGET_EMAIL)
-    console.log('Subject:', emailSubject)
-    console.log('Body:', emailBody)
-
-    // Success response
-    res.status(200).json({ 
-      success: true, 
+    return res.status(200).json({
+      success: true,
       message: 'RSVP submitted successfully',
       response: newResponse
     })
-
   } catch (error) {
     console.error('RSVP submission error:', error)
-    res.status(500).json({ 
-      error: 'Failed to submit RSVP' 
-    })
+    return res.status(500).json({ error: 'Failed to submit RSVP' })
   }
 }
