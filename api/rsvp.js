@@ -8,7 +8,7 @@ function getSupabase() {
   if (!supabaseUrl || !supabaseServiceKey) {
     throw new Error(
       'Missing SUPABASE_URL or SUPABASE_SERVICE_ROLE_KEY environment variables. ' +
-      'Please set them in your Vercel project settings.'
+      'Please set them in your environment (e.g. Vercel project settings or .env.local).'
     )
   }
   return createClient(supabaseUrl, supabaseServiceKey)
