@@ -2,95 +2,91 @@
 @tailwind components;
 @tailwind utilities;
 
-/* Definition of the design system. All colors, gradients, fonts, etc should be defined here. 
-All colors MUST be HSL.
+/*
+  Design System — 40th Birthday Invite
+  Palette: Deep Burgundy · Warm Cream · Antique Gold
+  Fonts: Playfair Display (headings) + Inter (body)
+  All colors in HSL.
 */
 
 @layer base {
   :root {
-    --background: 0 0% 100%;
-    --foreground: 222.2 84% 4.9%;
+    /* ── Core surfaces ── */
+    --background: 36 28% 95%;          /* warm cream */
+    --foreground: 345 18% 14%;         /* deep charcoal-wine */
 
-    --card: 0 0% 100%;
-    --card-foreground: 222.2 84% 4.9%;
+    --card: 36 22% 97%;
+    --card-foreground: 345 18% 14%;
 
-    --popover: 0 0% 100%;
-    --popover-foreground: 222.2 84% 4.9%;
+    --popover: 36 22% 97%;
+    --popover-foreground: 345 18% 14%;
 
-    --primary: 222.2 47.4% 11.2%;
-    --primary-foreground: 210 40% 98%;
+    /* ── Brand ── */
+    --primary: 345 55% 26%;            /* deep burgundy wine */
+    --primary-foreground: 36 28% 95%;  /* cream on wine */
 
-    --secondary: 210 40% 96.1%;
-    --secondary-foreground: 222.2 47.4% 11.2%;
+    --secondary: 42 40% 88%;           /* soft gold tint */
+    --secondary-foreground: 345 18% 14%;
 
-    --muted: 210 40% 96.1%;
-    --muted-foreground: 215.4 16.3% 46.9%;
+    --muted: 36 18% 90%;
+    --muted-foreground: 345 12% 50%;
 
-    --accent: 210 40% 96.1%;
-    --accent-foreground: 222.2 47.4% 11.2%;
+    --accent: 42 68% 50%;              /* antique gold */
+    --accent-foreground: 345 18% 14%;
 
-    --destructive: 0 84.2% 60.2%;
-    --destructive-foreground: 210 40% 98%;
+    --destructive: 0 72% 50%;
+    --destructive-foreground: 36 28% 95%;
 
-    --border: 214.3 31.8% 91.4%;
-    --input: 214.3 31.8% 91.4%;
-    --ring: 222.2 84% 4.9%;
+    --border: 345 20% 82%;
+    --input: 345 20% 85%;
+    --ring: 345 55% 26%;
 
-    --radius: 0.5rem;
+    --radius: 0.4rem;
 
-    --sidebar-background: 0 0% 98%;
+    /* ── Custom design tokens ── */
+    --wine-dark: 345 60% 16%;          /* very deep wine */
+    --wine-mid: 345 55% 26%;           /* primary wine */
+    --wine-light: 345 38% 45%;         /* lighter wine */
+    --gold: 42 68% 50%;                /* antique gold */
+    --gold-light: 42 55% 70%;          /* soft gold */
+    --cream: 36 28% 95%;               /* warm off-white */
+    --cream-dark: 36 22% 88%;          /* slightly deeper cream */
 
-    --sidebar-foreground: 240 5.3% 26.1%;
+    /* ── Gradients ── */
+    --gradient-hero: linear-gradient(
+      to bottom,
+      hsl(345 60% 10% / 0.92),
+      hsl(345 55% 16% / 0.80)
+    );
+    --gradient-section: linear-gradient(
+      135deg,
+      hsl(36 28% 97%) 0%,
+      hsl(42 35% 94%) 100%
+    );
+    --gradient-gold: linear-gradient(
+      135deg,
+      hsl(42 68% 50%) 0%,
+      hsl(38 72% 62%) 100%
+    );
+    --gradient-wine: linear-gradient(
+      135deg,
+      hsl(345 60% 16%) 0%,
+      hsl(345 48% 28%) 100%
+    );
 
-    --sidebar-primary: 240 5.9% 10%;
+    /* ── Shadows ── */
+    --shadow-card: 0 4px 24px -4px hsl(345 40% 20% / 0.12);
+    --shadow-gold: 0 2px 16px hsl(42 68% 50% / 0.25);
 
-    --sidebar-primary-foreground: 0 0% 98%;
-
-    --sidebar-accent: 240 4.8% 95.9%;
-
-    --sidebar-accent-foreground: 240 5.9% 10%;
-
-    --sidebar-border: 220 13% 91%;
-
-    --sidebar-ring: 217.2 91.2% 59.8%;
-  }
-
-  .dark {
-    --background: 222.2 84% 4.9%;
-    --foreground: 210 40% 98%;
-
-    --card: 222.2 84% 4.9%;
-    --card-foreground: 210 40% 98%;
-
-    --popover: 222.2 84% 4.9%;
-    --popover-foreground: 210 40% 98%;
-
-    --primary: 210 40% 98%;
-    --primary-foreground: 222.2 47.4% 11.2%;
-
-    --secondary: 217.2 32.6% 17.5%;
-    --secondary-foreground: 210 40% 98%;
-
-    --muted: 217.2 32.6% 17.5%;
-    --muted-foreground: 215 20.2% 65.1%;
-
-    --accent: 217.2 32.6% 17.5%;
-    --accent-foreground: 210 40% 98%;
-
-    --destructive: 0 62.8% 30.6%;
-    --destructive-foreground: 210 40% 98%;
-
-    --border: 217.2 32.6% 17.5%;
-    --input: 217.2 32.6% 17.5%;
-    --ring: 212.7 26.8% 83.9%;
-    --sidebar-background: 240 5.9% 10%;
-    --sidebar-foreground: 240 4.8% 95.9%;
-    --sidebar-primary: 224.3 76.3% 48%;
-    --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 240 3.7% 15.9%;
-    --sidebar-accent-foreground: 240 4.8% 95.9%;
-    --sidebar-border: 240 3.7% 15.9%;
-    --sidebar-ring: 217.2 91.2% 59.8%;
+    /* ── Sidebar (keep defaults) ── */
+    --sidebar-background: 36 20% 96%;
+    --sidebar-foreground: 345 18% 20%;
+    --sidebar-primary: 345 55% 26%;
+    --sidebar-primary-foreground: 36 28% 95%;
+    --sidebar-accent: 42 40% 88%;
+    --sidebar-accent-foreground: 345 18% 14%;
+    --sidebar-border: 345 20% 85%;
+    --sidebar-ring: 345 55% 26%;
   }
 }
 
@@ -99,7 +95,91 @@ All colors MUST be HSL.
     @apply border-border;
   }
 
+  html {
+    scroll-behavior: smooth;
+  }
+
   body {
     @apply bg-background text-foreground;
+    font-family: 'Inter', sans-serif;
   }
+
+  h1, h2, h3, h4, h5, h6 {
+    font-family: 'Playfair Display', serif;
+  }
+}
+
+/* ── Utility classes tied to design tokens ── */
+@layer components {
+  .font-display {
+    font-family: 'Playfair Display', serif;
+  }
+
+  .font-body {
+    font-family: 'Inter', sans-serif;
+  }
+
+  .text-gold {
+    color: hsl(var(--gold));
+  }
+
+  .text-wine {
+    color: hsl(var(--wine-mid));
+  }
+
+  .bg-hero-overlay {
+    background: var(--gradient-hero);
+  }
+
+  .bg-gold {
+    background: hsl(var(--gold));
+  }
+
+  .bg-wine {
+    background: var(--gradient-wine);
+  }
+
+  .border-gold {
+    border-color: hsl(var(--gold));
+  }
+
+  .divider-gold {
+    height: 1px;
+    background: linear-gradient(
+      to right,
+      transparent,
+      hsl(var(--gold)),
+      transparent
+    );
+  }
+
+  .card-elegant {
+    background: hsl(var(--card));
+    border: 1px solid hsl(var(--border));
+    box-shadow: var(--shadow-card);
+    border-radius: var(--radius);
+  }
+
+  /* Fade-in animation */
+  .animate-fade-up {
+    animation: fadeUp 0.8s ease both;
+  }
+
+  @keyframes fadeUp {
+    from {
+      opacity: 0;
+      transform: translateY(24px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
+  .animate-delay-100 { animation-delay: 0.1s; }
+  .animate-delay-200 { animation-delay: 0.2s; }
+  .animate-delay-300 { animation-delay: 0.3s; }
+  .animate-delay-400 { animation-delay: 0.4s; }
+  .animate-delay-500 { animation-delay: 0.5s; }
+  .animate-delay-600 { animation-delay: 0.6s; }
 }
