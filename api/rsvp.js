@@ -14,6 +14,13 @@ function getSupabase() {
   return createClient(supabaseUrl, supabaseServiceKey)
 }
 
+function isTableNotFound(error) {
+  if (!error) return false
+  const msg = (error.message || '').toLowerCase()
+  const isRelationMissing = msg.includes('relation') && msg.includes('does not exist')
+  return isRelationMissing || error.code === '42P01' || error.code === 'PGRST204'
+}
+
 export default async function handler(req, res) {
   // Enable CORS
   res.setHeader('Access-Control-Allow-Origin', '*')
@@ -51,6 +58,12 @@ export default async function handler(req, res) {
       return res.status(200).json({ responses })
     } catch (error) {
       console.error('Supabase GET error:', error)
+      if (isTableNotFound(error)) {
+        return res.status(500).json({
+          error: 'Database table not set up yet. Visit /api/setup for easy setup instructions.',
+          setup: true
+        })
+      }
       return res.status(500).json({ error: 'Failed to fetch RSVPs' })
     }
   }
@@ -86,6 +99,12 @@ export default async function handler(req, res) {
       })
     } catch (error) {
       console.error('Supabase DELETE error:', error)
+      if (isTableNotFound(error)) {
+        return res.status(500).json({
+          error: 'Database table not set up yet. Visit /api/setup for easy setup instructions.',
+          setup: true
+        })
+      }
       return res.status(500).json({ error: 'Failed to delete RSVP' })
     }
   }
@@ -134,6 +153,12 @@ export default async function handler(req, res) {
 
   } catch (error) {
     console.error('RSVP submission error:', error)
+    if (isTableNotFound(error)) {
+      return res.status(500).json({
+        error: 'Database table not set up yet. Visit /api/setup for easy setup instructions.',
+        setup: true
+      })
+    }
     return res.status(500).json({
       error: 'Failed to submit RSVP'
     })
