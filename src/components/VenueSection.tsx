@@ -19,19 +19,25 @@ const VenueSection = () => {
         </h2>
         <div className="divider-gold max-w-[120px] mx-auto mb-6" />
 
-        {/* Address */}
-        <div className="flex items-center justify-center gap-2 text-cream/70 mb-8">
-          <MapPin className="w-4 h-4 text-gold flex-shrink-0" strokeWidth={1.5} />
-          <p className="font-body text-sm tracking-wide">
-            45 West Bar, Leicester
-          </p>
-        </div>
-
         {/* Description */}
-        <p className="font-body text-cream/65 max-w-md mx-auto leading-relaxed mb-10">
+        <p className="font-body text-cream/65 max-w-md mx-auto leading-relaxed mb-8">
           An intimate and stylish venue — the perfect setting for an evening of good wine, 
           great company, and even better stories.
         </p>
+
+        {/* Map */}
+        <div className="mb-10 rounded-lg overflow-hidden shadow-2xl">
+          <iframe 
+            src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d2421.418395527544!2d-1.1348462!3d52.6343536!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x4877611feb2649dd%3A0xbf1f140b5ef89567!2s45%20West%20Bottle%20Shop%20%26%20Bar!5e0!3m2!1sen!2suk!4v1771504298105!5m2!1sen!2suk" 
+            width="100%" 
+            height="300" 
+            style={{ border: 0 }} 
+            allowFullScreen 
+            loading="lazy" 
+            referrerPolicy="no-referrer-when-downgrade"
+            className="w-full"
+          />
+        </div>
 
         {/* CTA Button */}
         <a

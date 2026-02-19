@@ -3,6 +3,7 @@ import { useForm } from "react-hook-form";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { CheckCircle } from "lucide-react";
+import { submitRSVP } from "../lib/emailService";
 
 /*
  * RSVP Form — Integration Notes
@@ -12,7 +13,7 @@ import { CheckCircle } from "lucide-react";
  *
  * To wire it up:
  *   1. Replace the `simulateSubmit` call in `onSubmit` with a `fetch` to your API route.
- *   2. Your endpoint should POST the form data and send an email to: john@fairfax-ball.com
+ *   2. Your endpoint should POST the form data and send an email to the event host.
  *   3. Do NOT hardcode API keys here — store them as environment secrets server-side.
  *
  * Example endpoint call (replace simulation):
@@ -22,7 +23,7 @@ import { CheckCircle } from "lucide-react";
  *     body: JSON.stringify(data),
  *   });
  *
- * RSVP data is sent to: john@fairfax-ball.com
+ * RSVP data is sent to the event host
  */
 
 const rsvpSchema = z.object({
@@ -58,17 +59,16 @@ const RSVPForm = () => {
   const onSubmit = async (data: RSVPFormData) => {
     setIsSubmitting(true);
     try {
-      /*
-       * TODO: Replace this simulation with a real API call.
-       * See integration notes above.
-       * Target email: john@fairfax-ball.com
-       */
-      await new Promise((resolve) => setTimeout(resolve, 1200)); // simulated delay
-      console.log("RSVP submitted:", data); // Remove before production
-      setSubmitted(true);
+      const result = await submitRSVP(data);
+      
+      if (result.success) {
+        setSubmitted(true);
+      } else {
+        throw new Error(result.message);
+      }
     } catch (error) {
       console.error("RSVP submission failed:", error);
-      // TODO: Show error toast to user
+      alert('Sorry, there was an error submitting your RSVP. Please try again later.');
     } finally {
       setIsSubmitting(false);
     }
@@ -195,13 +195,7 @@ const RSVPForm = () => {
             </button>
 
             <p className="font-body text-muted-foreground text-xs text-center">
-              Having trouble? Email us at{" "}
-              <a
-                href="mailto:john@fairfax-ball.com"
-                className="text-wine underline underline-offset-2"
-              >
-                john@fairfax-ball.com
-              </a>
+              Having trouble? Please contact the event host for assistance.
             </p>
           </form>
         )}
