@@ -1,8 +1,7 @@
 # Database Setup — Upstash Redis
 
 RSVP data is stored using **Upstash Redis**, a simple key-value store available
-from the Vercel Marketplace. No SQL, no tables, no schemas, no external
-accounts needed.
+from the Vercel Marketplace. No SQL, no tables, no schemas needed.
 
 ## Setup (3 steps, ~1 minute)
 
@@ -10,7 +9,25 @@ accounts needed.
 2. Click the **Storage** tab → **Create Database** → choose **Upstash Redis** → **Create**
 3. Click **Connect to Project** → select your project → **Connect**
 
-That's it. Redeploy and your RSVP form + admin page will work.
+**Important: After connecting, you must redeploy your project for the
+environment variables to take effect.** Go to **Deployments** → click the
+**⋮** menu on the latest deployment → **Redeploy**.
+
+## Environment Variables
+
+When you connect Upstash Redis, Vercel automatically adds these env vars to
+your project (you do NOT need to add them manually):
+
+```
+KV_REST_API_URL=https://your-db.upstash.io
+KV_REST_API_TOKEN=your-token
+KV_REST_API_READ_ONLY_TOKEN=...
+KV_URL=rediss://...
+REDIS_URL=rediss://...
+```
+
+The API only needs `KV_REST_API_URL` and `KV_REST_API_TOKEN` — both are set
+automatically.
 
 ## How it works
 
@@ -23,6 +40,7 @@ That's it. Redeploy and your RSVP form + admin page will work.
 
 | Problem | Fix |
 |---------|-----|
-| "Redis not configured" | Make sure Upstash Redis is connected (Storage tab in Vercel) and redeploy |
+| "Redis not configured" | Make sure you've **redeployed** after connecting Upstash Redis |
+| Still getting errors after redeploy | Go to Vercel → Settings → Environment Variables and check `KV_REST_API_URL` and `KV_REST_API_TOKEN` are listed |
 | Works locally but not in prod | Redis only works on Vercel — local dev uses localStorage fallback |
 | Need to reset all data | In Vercel dashboard → Storage → your Redis DB → CLI tab → run `DEL rsvps` |
