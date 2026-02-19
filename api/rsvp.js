@@ -1,82 +1,106 @@
-// Simple serverless function for RSVP submission
-// This can be deployed on Vercel, Netlify, or any serverless platform
-
-// In-memory storage for RSVP responses (for demo purposes)
-// In production, you'd use a database like Supabase, Firebase, or PostgreSQL
-let rsvpResponses = [];
-
-// Initialize with some sample data (optional)
-rsvpResponses = [
-  { name: "John Doe", attending: "yes", submittedAt: new Date().toISOString() },
-  { name: "Jane Smith", attending: "no", submittedAt: new Date().toISOString() }
-];
+// Serverless function for RSVP submission with Prisma database
+import { prisma } from '../lib/prisma.js'
 
 export default async function handler(req, res) {
   // Enable CORS
-  res.setHeader('Access-Control-Allow-Origin', '*');
-  res.setHeader('Access-Control-Allow-Methods', 'GET, POST, DELETE, OPTIONS');
-  res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
+  res.setHeader('Access-Control-Allow-Origin', '*')
+  res.setHeader('Access-Control-Allow-Methods', 'GET, POST, DELETE, OPTIONS')
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type')
 
   // Handle preflight requests
   if (req.method === 'OPTIONS') {
-    return res.status(200).end();
+    return res.status(200).end()
   }
 
   if (req.method === 'GET') {
-    // Return all RSVP responses for admin view
-    return res.status(200).json({ responses: rsvpResponses });
+    try {
+      // Get all RSVP responses from Prisma
+      const rsvps = await prisma.rSVP.findMany({
+        orderBy: {
+          submittedAt: 'desc'
+        }
+      })
+
+      // Transform data to match expected format
+      const responses = rsvps.map(item => ({
+        name: item.name,
+        attending: item.attending,
+        submittedAt: item.submittedAt.toISOString()
+      }))
+
+      return res.status(200).json({ responses })
+    } catch (error) {
+      console.error('Prisma GET error:', error)
+      return res.status(500).json({ error: 'Failed to fetch RSVPs' })
+    }
   }
 
   if (req.method === 'DELETE') {
-    // Delete an RSVP response
     try {
-      const { index } = req.body;
+      const { index } = req.body
 
-      if (index < 0 || index >= rsvpResponses.length) {
-        return res.status(400).json({ error: 'Invalid RSVP index' });
+      // First get all RSVPs to find the one to delete
+      const allRsvps = await prisma.rSVP.findMany({
+        orderBy: {
+          submittedAt: 'desc'
+        }
+      })
+
+      if (index < 0 || index >= allRsvps.length) {
+        return res.status(400).json({ error: 'Invalid RSVP index' })
       }
 
-      const deletedResponse = rsvpResponses[index];
-      rsvpResponses.splice(index, 1);
+      // Delete the specific RSVP
+      const rsvpToDelete = allRsvps[index]
+      await prisma.rSVP.delete({
+        where: {
+          id: rsvpToDelete.id
+        }
+      })
 
       return res.status(200).json({ 
         success: true, 
-        message: `RSVP for ${deletedResponse.name} deleted successfully`
-      });
+        message: `RSVP for ${rsvpToDelete.name} deleted successfully`
+      })
     } catch (error) {
-      console.error('Delete RSVP error:', error);
-      return res.status(500).json({ 
-        error: 'Failed to delete RSVP' 
-      });
+      console.error('Prisma DELETE error:', error)
+      return res.status(500).json({ error: 'Failed to delete RSVP' })
     }
   }
 
   if (req.method !== 'POST') {
-    return res.status(405).json({ error: 'Method not allowed' });
+    return res.status(405).json({ error: 'Method not allowed' })
   }
 
   try {
-    const { name, attending } = req.body;
+    const { name, attending } = req.body
 
     // Validate required fields
     if (!name || !attending) {
-      return res.status(400).json({ error: 'Missing required fields' });
+      return res.status(400).json({ error: 'Missing required fields' })
     }
 
-    // Store the RSVP response
+    // Store the RSVP response in Prisma
+    const newRSVP = await prisma.rSVP.create({
+      data: {
+        name,
+        attending,
+        submittedAt: new Date()
+      }
+    })
+
+    // Transform response to match expected format
     const newResponse = {
-      name,
-      attending,
-      submittedAt: new Date().toISOString()
-    };
-    
-    rsvpResponses.push(newResponse);
+      name: newRSVP.name,
+      attending: newRSVP.attending,
+      submittedAt: newRSVP.submittedAt.toISOString()
+    }
 
     // Your email address (can also be set as environment variable)
-    const TARGET_EMAIL = 'john@fairfax-ball.com';
+    const TARGET_EMAIL = 'john@fairfax-ball.com'
 
     // Create email content
-    const emailSubject = `RSVP Response: ${name}`;
+    const emailSubject = `RSVP Response: ${name}`
     const emailBody = `
 New RSVP submission:
 
@@ -86,7 +110,7 @@ Submitted: ${new Date().toLocaleString()}
 
 ---
 This RSVP was submitted via the 40th Birthday invitation website.
-    `;
+    `
 
     // For production, you would use a real email service like:
     // - Resend (recommended)
@@ -106,21 +130,21 @@ This RSVP was submitted via the 40th Birthday invitation website.
     */
 
     // For development/testing, just log the email data
-    console.log('Email would be sent to:', TARGET_EMAIL);
-    console.log('Subject:', emailSubject);
-    console.log('Body:', emailBody);
+    console.log('Email would be sent to:', TARGET_EMAIL)
+    console.log('Subject:', emailSubject)
+    console.log('Body:', emailBody)
 
     // Success response
     res.status(200).json({ 
       success: true, 
       message: 'RSVP submitted successfully',
       response: newResponse
-    });
+    })
 
   } catch (error) {
-    console.error('RSVP submission error:', error);
+    console.error('RSVP submission error:', error)
     res.status(500).json({ 
       error: 'Failed to submit RSVP' 
-    });
+    })
   }
 }
