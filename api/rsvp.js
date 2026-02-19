@@ -17,6 +17,30 @@ export default async function handler(req, res) {
     return res.status(200).json({ responses: rsvpResponses });
   }
 
+  if (req.method === 'DELETE') {
+    // Delete an RSVP response
+    try {
+      const { index } = req.body;
+
+      if (index < 0 || index >= rsvpResponses.length) {
+        return res.status(400).json({ error: 'Invalid RSVP index' });
+      }
+
+      const deletedResponse = rsvpResponses[index];
+      rsvpResponses.splice(index, 1);
+
+      return res.status(200).json({ 
+        success: true, 
+        message: `RSVP for ${deletedResponse.name} deleted successfully`
+      });
+    } catch (error) {
+      console.error('Delete RSVP error:', error);
+      return res.status(500).json({ 
+        error: 'Failed to delete RSVP' 
+      });
+    }
+  }
+
   if (req.method !== 'POST') {
     return res.status(405).json({ error: 'Method not allowed' });
   }
