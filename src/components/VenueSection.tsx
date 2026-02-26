@@ -20,10 +20,7 @@ const VenueSection = () => {
         <div className="divider-gold max-w-[120px] mx-auto mb-6" />
 
         {/* Description */}
-        <p className="font-body text-cream/65 max-w-md mx-auto leading-relaxed mb-8">
-          The perfect setting for an evening of good wine,
-          great company, and even better stories.
-        </p>
+
 
         {/* Map */}
         <div className="mb-10 rounded-lg overflow-hidden shadow-2xl">
