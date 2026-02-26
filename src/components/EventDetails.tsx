@@ -84,7 +84,7 @@ const EventDetails = () => {
             <DetailItem
               icon={User}
               label="Dress Code"
-              value="Smart Casual — with an 80s flair"
+              value="Smart Casual — with an optional 80s flair"
             />
           </div>
 

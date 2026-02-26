@@ -68,11 +68,6 @@ const Hero = () => {
 
       {/* Content */}
       <div className="relative z-10 text-center px-6 max-w-3xl mx-auto">
-        {/* Year badge */}
-        <p className="font-body text-gold tracking-[0.3em] uppercase text-xs md:text-sm mb-6 animate-fade-up animate-delay-100">
-          1986 → 2026
-        </p>
-
         {/* Divider */}
         <div className="flex items-center justify-center gap-4 mb-8 animate-fade-up animate-delay-200">
           <div className="divider-gold w-16 md:w-28" />
