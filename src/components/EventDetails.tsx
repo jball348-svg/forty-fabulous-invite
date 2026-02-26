@@ -47,10 +47,6 @@ const EventDetails = () => {
           <p className="font-body text-wine text-xs uppercase tracking-[0.3em] mb-4">
             The Details
           </p>
-          <h2 className="font-display text-foreground text-4xl md:text-5xl font-medium mb-4">
-            An Evening to{" "}
-            <em className="italic text-wine">Remember</em>
-          </h2>
           <div className="divider-gold max-w-[120px] mx-auto" />
         </div>
 
@@ -65,9 +61,6 @@ const EventDetails = () => {
             <h3 className="font-display text-5xl md:text-6xl font-medium text-wine">
               Jade
             </h3>
-            <p className="font-body text-muted-foreground mt-2 italic">
-              Turning 40 in style
-            </p>
           </div>
 
           {/* Details list */}
@@ -91,7 +84,7 @@ const EventDetails = () => {
             <DetailItem
               icon={User}
               label="Dress Code"
-              value="Smart Casual — look the part"
+              value="Smart Casual — with an 80s flair"
             />
           </div>
 

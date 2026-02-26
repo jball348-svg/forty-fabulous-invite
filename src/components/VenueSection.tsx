@@ -21,7 +21,7 @@ const VenueSection = () => {
 
         {/* Description */}
         <p className="font-body text-cream/65 max-w-md mx-auto leading-relaxed mb-8">
-          An intimate and stylish venue — the perfect setting for an evening of good wine, 
+          The perfect setting for an evening of good wine,
           great company, and even better stories.
         </p>
 
@@ -49,15 +49,6 @@ const VenueSection = () => {
           View Venue Website
           <ExternalLink className="w-4 h-4 group-hover:translate-x-0.5 group-hover:-translate-y-0.5 transition-transform" />
         </a>
-
-        {/* Decorative year badge */}
-        <div className="mt-16 inline-block">
-          <div className="border border-gold/30 rounded-full px-8 py-3">
-            <p className="font-display italic text-gold/60 text-lg">
-              An unforgettable evening awaits
-            </p>
-          </div>
-        </div>
       </div>
     </section>
   );
