@@ -59,7 +59,7 @@ const EventDetails = () => {
             </p>
             {/* TODO: Replace [Name] with the birthday person's name */}
             <h3 className="font-display text-5xl md:text-6xl font-medium text-wine">
-              Jade
+              Jade's 40th Birthday
             </h3>
           </div>
 
